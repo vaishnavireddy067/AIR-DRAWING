@@ -1,19 +1,25 @@
 # Multimodal AI Suite: Air Drawing, Speech, OCR, TTS & Translation 🎨🎙️📷🔊🌐
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-vaishnavireddy067%2FAIR--DRAWING-blue?logo=github)](https://github.com/vaishnavireddy067/AIR-DRAWING)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvaishnavireddy067%2FAIR-DRAWING)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-Web%20Dashboard-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-5C3EE8?logo=opencv&logoColor=white)](https://opencv.org/)
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-Hand%20Tracking-00A98F?logo=google&logoColor=white)](https://developers.google.com/mediapipe)
 [![Tesseract OCR](https://img.shields.io/badge/Tesseract-AI%20OCR-orange)](https://github.com/naptha/tesseract.js)
 
-A complete **5-in-1 Multimodal AI Interaction System** combining Computer Vision, Hand Gesture Tracking, Real-Time Speech Recognition, Optical Character Recognition (OCR), Text-to-Speech (TTS), Multi-Language Translation, and an interactive Dashboard Gallery.
+A complete **5-in-1 Multimodal AI Interaction System** combining Computer Vision, Hand Gesture Tracking, Real-Time Speech Recognition, Voice AI Generative Drawing, Auto-Shape Beautifier, Optical Character Recognition (OCR), Text-to-Speech (TTS), Multi-Language Translation, and an interactive Dashboard Gallery.
 
 ---
 
-## 🚀 Live Local Web Deployment Link
+## ⚡ 1-Click Vercel Deployment
 
-👉 **[http://127.0.0.1:5000](http://127.0.0.1:5000)** (or `http://localhost:5000`)
+Deploy this full web app to **Vercel** with one click:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvaishnavireddy067%2FAIR-DRAWING)
+
+1. Connect your GitHub account on [Vercel](https://vercel.com).
+2. Select repository `vaishnavireddy067/AIR-DRAWING`.
+3. Click **Deploy** (No special environment variables required).
 
 ---
 
@@ -27,18 +33,19 @@ A complete **5-in-1 Multimodal AI Interaction System** combining Computer Vision
         ▼              ▼               ▼                ▼               ▼
  ✋ 1. Air Drawing 🎙️ 2. Speech-to-Text 📷 3. AI OCR  🔊 4. TTS Voice  🌐 5. Translation
  - 1 Finger Draw   - Instant Word Stream - Tesseract.js - Natural Speech - Telugu (తెలుగు)
- - 2 Finger Select - Multi-Language    - Canvas Read    - Read Aloud     - Hindi (हिंदी)
+ - Auto-Shape Snap - Voice AI Generator- Canvas Read    - Read Aloud     - Hindi (हिंदी)
  - Fist Erase      - Dynamic Waveform  - Handwritings   - Multilingual   - Spanish, French...
 ```
 
-### 1. ✋ Air Drawing (Gesture Control)
-- **☝️ Single Index Finger Up**: Draw freehand lines, letters, or mathematical symbols on the canvas in the air.
+### 1. ✋ Air Drawing & Auto-Shape Recognition
+- **☝️ Single Index Finger Up**: Draw freehand lines, letters, or mathematical symbols in the air.
+- **✨ Auto-Shape Beautifier**: Rough hand circles (○), rectangles (▭), and lines (―) automatically snap into clean geometric shapes when you lift your finger.
 - **✌️ Two Fingers Up (Index + Middle)**: Selection & hover mode over toolbar options.
-- **✊ Fist Gesture**: Circular gesture-based eraser.
-- **Dual Live Display**: Live camera feed with 21-point hand skeleton tracking on the left, pure virtual white canvas on the right.
+- **✊ Fist Gesture**: Circular spatial eraser.
 
-### 2. 🎙️ Speech-to-Text (Real-Time Captions)
+### 2. 🎙️ Real-Time Speech-to-Text & Voice AI Generator
 - **Zero-Latency Word-by-Word Streaming**: Spoken words are instantly converted into subtitles with glowing visual audio waveforms.
+- **Voice AI Generator**: Say *"Draw a circle"*, *"Draw a rectangle"*, *"Draw a triangle"*, *"Draw a star"*, *"Draw a heart"*, *"Red color"*, or *"Clear canvas"* to generate shapes automatically.
 - **Multi-Language Support**: English (India), English (US), Telugu (తెలుగు), Hindi (हिंदी).
 
 ### 3. 📷 AI OCR (Handwriting & Text Extraction)
@@ -82,10 +89,10 @@ A complete **5-in-1 Multimodal AI Interaction System** combining Computer Vision
 
 ---
 
-## ⚙️ How to Run
+## ⚙️ Local Development
 
 ```bash
-# 1. Clone the repository
+# 1. Clone repository
 git clone https://github.com/vaishnavireddy067/AIR-DRAWING.git
 cd AIR-DRAWING
 

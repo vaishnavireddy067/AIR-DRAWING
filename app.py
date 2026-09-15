@@ -12,11 +12,17 @@ from flask import Flask, render_template, jsonify, send_file, request, send_from
 
 app = Flask(__name__)
 
-# Base directory for saved files
+# Base directory for saved files (Vercel uses /tmp for write operations)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SAVED_DIR = os.path.join(BASE_DIR, "saved_drawings")
-META_FILE = os.path.join(BASE_DIR, "drawings_meta.json")
-ANALYTICS_FILE = os.path.join(BASE_DIR, "analytics.json")
+
+if os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or not os.access(BASE_DIR, os.W_OK):
+    SAVED_DIR = os.path.join("/tmp", "saved_drawings")
+    META_FILE = os.path.join("/tmp", "drawings_meta.json")
+    ANALYTICS_FILE = os.path.join("/tmp", "analytics.json")
+else:
+    SAVED_DIR = os.path.join(BASE_DIR, "saved_drawings")
+    META_FILE = os.path.join(BASE_DIR, "drawings_meta.json")
+    ANALYTICS_FILE = os.path.join(BASE_DIR, "analytics.json")
 
 os.makedirs(SAVED_DIR, exist_ok=True)
 
@@ -31,8 +37,11 @@ def load_meta():
     return []
 
 def save_meta(data):
-    with open(META_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=2)
+    try:
+        with open(META_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+    except Exception:
+        pass
 
 def load_analytics():
     if os.path.exists(ANALYTICS_FILE):
@@ -52,8 +61,11 @@ def load_analytics():
     }
 
 def save_analytics(data):
-    with open(ANALYTICS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=2)
+    try:
+        with open(ANALYTICS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+    except Exception:
+        pass
 
 def find_free_port():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -71,7 +83,11 @@ def index():
 
 @app.route('/health')
 def health():
-    return jsonify({"status": "online", "app": "Multimodal AI Interaction System (Air Drawing, Speech, OCR, TTS, Translation)"})
+    return jsonify({
+        "status": "online",
+        "app": "Multimodal AI Interaction System",
+        "features": ["Air Drawing", "Speech-to-Text", "Auto-Shape Beautifier", "Voice AI Generator", "AI OCR", "TTS", "Translation"]
+    })
 
 # Serve saved drawings
 @app.route('/saved_drawings/<path:filename>')
@@ -159,7 +175,7 @@ def delete_drawing(draw_id):
         return jsonify({"success": True})
     return jsonify({"error": "Drawing not found"}), 404
 
-# API: Translation Engine (Translates between English, Telugu, Hindi, Spanish, French, etc.)
+# API: Translation Engine
 @app.route('/api/translate', methods=['POST'])
 def translate_text():
     try:
@@ -171,7 +187,6 @@ def translate_text():
         if not text:
             return jsonify({"translated_text": ""})
 
-        # Query MyMemory Translation API
         encoded_query = urllib.parse.quote(text)
         url = f"https://api.mymemory.translated.net/get?q={encoded_query}&langpair={source_lang}|{target_lang}"
         
@@ -250,8 +265,7 @@ if __name__ == '__main__':
         port = find_free_port()
 
     print("==================================================")
-    print("  Multimodal AI Interaction System (5-in-1 Suite)")
-    print("  Air Drawing | Speech | OCR | TTS | Translation")
+    print("  Multimodal AI Interaction System (Vercel Ready)")
     print(f"  --> http://127.0.0.1:{port}")
     print("==================================================")
     
