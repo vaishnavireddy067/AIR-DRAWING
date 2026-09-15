@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multimodal AI System - Air Drawing, Speech, OCR, TTS & Translation</title>
+    <title>Multimodal AI System - Air Drawing, Shape Recognition & Voice AI</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,11 +24,11 @@
     <header class="navbar">
         <div class="logo-container">
             <div class="logo-icon">
-                <i class="fa-solid fa-brain"></i>
+                <i class="fa-solid fa-shapes"></i>
             </div>
             <div class="logo-text">
                 <h1>Multimodal AI Suite</h1>
-                <span class="sub-badge">Air Drawing • Speech • OCR • TTS • Translation</span>
+                <span class="sub-badge">Gesture • Voice AI • Shape Snap • OCR</span>
             </div>
         </div>
 
@@ -53,6 +53,13 @@
 
         <!-- Color & Action Toolbar -->
         <div class="toolbar" id="topToolbar">
+            <!-- Auto Shape Snap Toggle -->
+            <button id="autoShapeBtn" class="toggle-pill active" title="Toggle Auto Shape Recognition (Snaps rough circles, rectangles & lines to clean shapes)">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Shape <span class="state-indicator">ON</span>
+            </button>
+
+            <div class="divider"></div>
+
             <div class="color-picker-group">
                 <button class="color-btn" data-color="#ff3366" style="--c: #ff3366" title="Red Color">
                     <span class="dot"></span> Red
@@ -89,7 +96,21 @@
         </div>
     </header>
 
-    <!-- TAB 1: LIVE STUDIO (Dual Screen + Live OCR & TTS Widget) -->
+    <!-- Voice Command Helper Banner -->
+    <div class="voice-helper-bar">
+        <div class="voice-helper-content">
+            <span class="voice-icon"><i class="fa-solid fa-microphone-lines"></i> <b>Voice AI Generator:</b></span>
+            <span class="voice-command-tag">🎙️ "Draw a circle"</span>
+            <span class="voice-command-tag">🎙️ "Draw a rectangle"</span>
+            <span class="voice-command-tag">🎙️ "Draw a triangle"</span>
+            <span class="voice-command-tag">🎙️ "Draw a star"</span>
+            <span class="voice-command-tag">🎙️ "Draw a heart"</span>
+            <span class="voice-command-tag">🎙️ "Red / Green / Blue color"</span>
+            <span class="voice-command-tag">🎙️ "Clear canvas"</span>
+        </div>
+    </div>
+
+    <!-- TAB 1: LIVE STUDIO (Dual Screen + Live OCR & Shape Snap) -->
     <main class="tab-content active" id="studioTab">
         <div class="workspace-container">
             <!-- Left Panel: Live Camera Feed with Hand Tracking -->
@@ -121,7 +142,7 @@
                 <div class="card-header">
                     <div class="title-with-icon">
                         <i class="fa-solid fa-palette palette-icon"></i>
-                        <h2>AI Virtual Canvas</h2>
+                        <h2>AI Virtual Canvas (Auto-Shape Enabled)</h2>
                     </div>
                     <div class="ocr-mini-actions">
                         <button class="mini-btn" id="canvasOcrBtn" title="Extract text drawn on canvas">
@@ -138,9 +159,9 @@
                 </div>
 
                 <div class="shortcuts-hint">
+                    <span><b>Rough Circle (○):</b> Auto-snaps clean</span>
                     <span><b>'O':</b> AI OCR Read</span>
                     <span><b>'S':</b> Save Snapshot</span>
-                    <span><b>'C':</b> Clear All</span>
                 </div>
             </section>
         </div>
@@ -249,7 +270,7 @@
             <div class="dashboard-header">
                 <div>
                     <h2><i class="fa-solid fa-chart-pie"></i> Multimodal AI Interaction Analytics</h2>
-                    <p class="subtitle">Real-time metrics for hand gestures, speech recognition, OCR runs, and translations.</p>
+                    <p class="subtitle">Real-time metrics for hand gestures, speech recognition, shape snaps, and voice commands.</p>
                 </div>
             </div>
 
@@ -267,11 +288,11 @@
 
                 <div class="stat-card">
                     <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">
-                        <i class="fa-solid fa-image"></i>
+                        <i class="fa-solid fa-shapes"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-value" id="statDrawings">0</span>
-                        <span class="stat-label">Saved Canvas Artifacts</span>
+                        <span class="stat-value" id="statShapesSnapped">0</span>
+                        <span class="stat-label">Shapes Auto-Snapped</span>
                     </div>
                 </div>
 
@@ -281,7 +302,7 @@
                     </div>
                     <div class="stat-info">
                         <span class="stat-value" id="statSpeechCount">0</span>
-                        <span class="stat-label">Speech Utterances</span>
+                        <span class="stat-label">Voice Commands & Speech</span>
                     </div>
                 </div>
 
@@ -347,7 +368,7 @@
                         <i class="fa-solid fa-volume-high access-icon"></i>
                         <h3>Audio Confirmation Chimes</h3>
                     </div>
-                    <p>Plays subtle audio beeps when switching colors, saving drawings, or clearing canvas.</p>
+                    <p>Plays subtle audio beeps when switching colors, auto-snapping shapes, or saving drawings.</p>
                     <label class="switch-label">
                         <span>Audio Chimes</span>
                         <input type="checkbox" id="audioChimeToggle" checked>
@@ -357,11 +378,11 @@
                 <div class="access-card">
                     <div class="access-header">
                         <i class="fa-solid fa-hand-holding-hand access-icon"></i>
-                        <h3>Touch-Free Physical Assistance</h3>
+                        <h3>Voice AI Generator</h3>
                     </div>
-                    <p>Control the entire workspace without touching any mouse or keyboard using natural hand gestures.</p>
+                    <p>Say "Draw a circle", "Draw a star", or "Draw a heart" to instantly generate perfect shapes without drawing.</p>
                     <div class="badge-status">
-                        <i class="fa-solid fa-check-circle"></i> Active & Ready
+                        <i class="fa-solid fa-check-circle"></i> Voice Active & Ready
                     </div>
                 </div>
             </div>
@@ -379,7 +400,7 @@
         <div class="caption-container">
             <p id="captionText" class="caption-text">
                 <span class="caption-final">Speak into your mic: </span>
-                <span class="caption-interim">captions stream instantly here word-by-word...</span>
+                <span class="caption-interim">Say "Draw a circle" or talk for instant captions...</span>
             </p>
         </div>
         

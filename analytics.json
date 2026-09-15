@@ -1,8 +1,9 @@
 {
-  "total_strokes": 39,
+  "total_strokes": 50,
   "total_drawings_saved": 0,
   "total_speech_segments": 0,
-  "total_gestures_detected": 66,
+  "total_gestures_detected": 205,
   "speech_transcripts": [],
-  "total_translations": 1
+  "total_translations": 2,
+  "total_ocr_runs": 2
 }

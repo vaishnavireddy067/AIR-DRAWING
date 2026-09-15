@@ -1,10 +1,11 @@
 /**
- * Multimodal AI Interaction System (5-in-1 Suite)
- * 1. ✋ Hand Gesture Detection (Air Drawing & Selection)
- * 2. 🎙️ Real-time Speech-to-Text Streaming
- * 3. 📷 AI OCR (Handwriting & Canvas Text Extraction via Tesseract.js)
- * 4. 🔊 Text-to-Speech (Natural Voice Readout Engine)
- * 5. 🌐 Multi-Language Translation (Telugu, Hindi, Spanish, etc.)
+ * Multimodal AI Interaction System
+ * - ✋ Hand Gesture Detection (Air Drawing & Selection)
+ * - 📐 Geometric Shape Recognition & Auto-Shape Beautifier (Circle, Rectangle, Triangle, Line)
+ * - 🎙️ Real-time Speech-to-Text & Voice AI Generative Drawing ("Draw a circle", "Draw a star"...)
+ * - 📷 AI OCR (Handwriting & Text Extraction)
+ * - 🔊 Text-to-Speech (TTS Voice Readout Engine)
+ * - 🌐 Multi-Language Translation (Telugu, Hindi, Spanish, etc.)
  */
 
 // DOM Elements
@@ -19,6 +20,7 @@ const camStatus = document.getElementById('camStatus');
 const captionText = document.getElementById('captionText');
 const speechLang = document.getElementById('speechLang');
 const micWave = document.getElementById('micWave');
+const autoShapeBtn = document.getElementById('autoShapeBtn');
 const clearBtn = document.getElementById('clearBtn');
 const saveBtn = document.getElementById('saveBtn');
 const colorButtons = document.querySelectorAll('.color-btn');
@@ -51,6 +53,7 @@ const speakTranslationBtn = document.getElementById('speakTranslationBtn');
 const statStrokes = document.getElementById('statStrokes');
 const statDrawings = document.getElementById('statDrawings');
 const statSpeechCount = document.getElementById('statSpeechCount');
+const statShapesSnapped = document.getElementById('statShapesSnapped');
 const statOcrRuns = document.getElementById('statOcrRuns');
 const transcriptList = document.getElementById('transcriptList');
 
@@ -65,9 +68,15 @@ let brushThickness = 6;
 let eraserRadius = 35;
 let prevPoint = null;
 let currentMode = 'Standby';
+let isAutoShapeEnabled = true;
+
+// Active Stroke Buffer for Shape Recognition
+let currentStrokePoints = [];
+let canvasSnapshotBeforeStroke = null;
 
 let sessionStrokes = 0;
 let sessionGestures = 0;
+let sessionShapesSnapped = 0;
 let sessionOcrRuns = 0;
 let currentActiveCaption = '';
 let lastExtractedOcr = '';
@@ -103,8 +112,19 @@ function resizeCanvases() {
 resizeCanvases();
 
 // -------------------------------------------------------------
-// 1. Tab Navigation & Notifications
+// 1. Auto Shape Toggle & Tab Navigation
 // -------------------------------------------------------------
+if (autoShapeBtn) {
+    autoShapeBtn.addEventListener('click', () => {
+        isAutoShapeEnabled = !isAutoShapeEnabled;
+        autoShapeBtn.classList.toggle('active', isAutoShapeEnabled);
+        const ind = autoShapeBtn.querySelector('.state-indicator');
+        if (ind) ind.textContent = isAutoShapeEnabled ? 'ON' : 'OFF';
+        showToast(`Auto-Shape Recognition: ${isAutoShapeEnabled ? 'Enabled' : 'Disabled'}`);
+        playChime(550);
+    });
+}
+
 navTabs.forEach(tab => {
     tab.addEventListener('click', () => {
         const targetTab = tab.getAttribute('data-tab');
@@ -172,13 +192,244 @@ function setColor(hex) {
 function clearCanvas() {
     drawCtx.fillStyle = '#ffffff';
     drawCtx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+    currentStrokePoints = [];
+    prevPoint = null;
+    canvasSnapshotBeforeStroke = null;
     playChime(300, 'triangle');
     showToast('Canvas Cleared!');
 }
 clearBtn.addEventListener('click', clearCanvas);
 
 // -------------------------------------------------------------
-// 3. AI OCR Recognition (Tesseract.js)
+// 3. Geometric Shape Recognition & Auto-Snap Engine
+// -------------------------------------------------------------
+function analyzeAndSnapShape(points) {
+    if (!isAutoShapeEnabled || points.length < 15) return;
+
+    // Calculate total path length
+    let pathLength = 0;
+    for (let i = 1; i < points.length; i++) {
+        const dx = points[i].x - points[i - 1].x;
+        const dy = points[i].y - points[i - 1].y;
+        pathLength += Math.hypot(dx, dy);
+    }
+
+    if (pathLength < 40) return; // Ignore tiny accidental noise
+
+    const pStart = points[0];
+    const pEnd = points[points.length - 1];
+    const directDist = Math.hypot(pEnd.x - pStart.x, pEnd.y - pStart.y);
+
+    // Bounding Box & Centroid
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let sumX = 0, sumY = 0;
+
+    for (const p of points) {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+        sumX += p.x;
+        sumY += p.y;
+    }
+
+    const w = maxX - minX;
+    const h = maxY - minY;
+    const cx = sumX / points.length;
+    const cy = sumY / points.length;
+    const isClosedLoop = directDist < 0.32 * pathLength;
+
+    // Radius statistics from centroid
+    let radii = [];
+    for (const p of points) {
+        radii.push(Math.hypot(p.x - cx, p.y - cy));
+    }
+    const meanRadius = radii.reduce((a, b) => a + b, 0) / radii.length;
+    const variance = radii.reduce((a, r) => a + Math.pow(r - meanRadius, 2), 0) / radii.length;
+    const stdDevRadius = Math.sqrt(variance);
+    const radiusRatio = stdDevRadius / meanRadius;
+    const aspectRatio = w / h;
+
+    let detectedShape = null;
+
+    // 1. Straight Line Check
+    if (directDist / pathLength > 0.88 && pathLength > 60) {
+        detectedShape = {
+            type: 'line',
+            x1: pStart.x, y1: pStart.y,
+            x2: pEnd.x, y2: pEnd.y
+        };
+    }
+    // 2. Circle Check (Closed loop, round radius variance, square-ish aspect)
+    else if (isClosedLoop && radiusRatio < 0.28 && aspectRatio > 0.65 && aspectRatio < 1.45 && meanRadius > 20) {
+        detectedShape = {
+            type: 'circle',
+            cx: cx, cy: cy,
+            r: meanRadius
+        };
+    }
+    // 3. Rectangle / Square Check (Closed loop, boxy fill)
+    else if (isClosedLoop && w > 45 && h > 45 && (aspectRatio < 0.6 || aspectRatio > 1.5 || radiusRatio > 0.32)) {
+        // Approximate corner points
+        detectedShape = {
+            type: 'rectangle',
+            x: minX, y: minY,
+            w: w, h: h
+        };
+    }
+
+    // If a clean shape was detected, restore canvas before rough stroke and draw perfect geometric shape
+    if (detectedShape) {
+        if (canvasSnapshotBeforeStroke) {
+            drawCtx.putImageData(canvasSnapshotBeforeStroke, 0, 0);
+        }
+
+        drawCtx.strokeStyle = currentColor;
+        drawCtx.lineWidth = brushThickness + 1;
+        drawCtx.lineCap = 'round';
+        drawCtx.lineJoin = 'round';
+
+        if (detectedShape.type === 'circle') {
+            drawCtx.beginPath();
+            drawCtx.arc(detectedShape.cx, detectedShape.cy, detectedShape.r, 0, 2 * Math.PI);
+            drawCtx.stroke();
+            showToast('✨ Auto-Snapped to Clean Circle (○)!');
+        } else if (detectedShape.type === 'rectangle') {
+            drawCtx.beginPath();
+            drawCtx.roundRect(detectedShape.x, detectedShape.y, detectedShape.w, detectedShape.h, 6);
+            drawCtx.stroke();
+            showToast('✨ Auto-Snapped to Clean Rectangle (▭)!');
+        } else if (detectedShape.type === 'line') {
+            drawCtx.beginPath();
+            drawCtx.moveTo(detectedShape.x1, detectedShape.y1);
+            drawCtx.lineTo(detectedShape.x2, detectedShape.y2);
+            drawCtx.stroke();
+            showToast('✨ Auto-Snapped to Clean Straight Line (―)!');
+        }
+
+        sessionShapesSnapped++;
+        playChime(880);
+    }
+}
+
+// -------------------------------------------------------------
+// 4. Voice-Driven Generative AI Drawing Engine
+// -------------------------------------------------------------
+function generateShapeFromVoice(shapeName, color = currentColor) {
+    const w = drawingCanvas.width;
+    const h = drawingCanvas.height;
+    const cx = w / 2;
+    const cy = h / 2;
+
+    drawCtx.strokeStyle = color;
+    drawCtx.lineWidth = brushThickness + 2;
+    drawCtx.lineCap = 'round';
+    drawCtx.lineJoin = 'round';
+
+    if (shapeName === 'circle') {
+        drawCtx.beginPath();
+        drawCtx.arc(cx, cy, 90, 0, 2 * Math.PI);
+        drawCtx.stroke();
+        showToast('🎙️ Voice Generated: Circle (○)');
+    } else if (shapeName === 'rectangle' || shapeName === 'square') {
+        drawCtx.beginPath();
+        drawCtx.roundRect(cx - 100, cy - 80, 200, 160, 8);
+        drawCtx.stroke();
+        showToast('🎙️ Voice Generated: Rectangle (▭)');
+    } else if (shapeName === 'triangle') {
+        drawCtx.beginPath();
+        drawCtx.moveTo(cx, cy - 90);
+        drawCtx.lineTo(cx + 95, cy + 75);
+        drawCtx.lineTo(cx - 95, cy + 75);
+        drawCtx.closePath();
+        drawCtx.stroke();
+        showToast('🎙️ Voice Generated: Triangle (△)');
+    } else if (shapeName === 'star') {
+        drawStar(cx, cy, 5, 85, 40);
+        showToast('🎙️ Voice Generated: Star (⭐)');
+    } else if (shapeName === 'heart') {
+        drawHeart(cx, cy - 20, 120);
+        showToast('🎙️ Voice Generated: Heart (❤️)');
+    }
+
+    sessionShapesSnapped++;
+    playChime(850);
+}
+
+function drawStar(cx, cy, spikes, outerRadius, innerRadius) {
+    let rot = Math.PI / 2 * 3;
+    let x = cx;
+    let y = cy;
+    let step = Math.PI / spikes;
+
+    drawCtx.beginPath();
+    drawCtx.moveTo(cx, cy - outerRadius);
+    for (let i = 0; i < spikes; i++) {
+        x = cx + Math.cos(rot) * outerRadius;
+        y = cy + Math.sin(rot) * outerRadius;
+        drawCtx.lineTo(x, y);
+        rot += step;
+
+        x = cx + Math.cos(rot) * innerRadius;
+        y = cy + Math.sin(rot) * innerRadius;
+        drawCtx.lineTo(x, y);
+        rot += step;
+    }
+    drawCtx.lineTo(cx, cy - outerRadius);
+    drawCtx.closePath();
+    drawCtx.stroke();
+}
+
+function drawHeart(x, y, size) {
+    drawCtx.beginPath();
+    const topCurveHeight = size * 0.3;
+    drawCtx.moveTo(x, y + topCurveHeight);
+    drawCtx.bezierCurveTo(x, y, x - size / 2, y, x - size / 2, y + topCurveHeight);
+    drawCtx.bezierCurveTo(x - size / 2, y + (size + topCurveHeight) / 2, x, y + (size + topCurveHeight) / 1.4, x, y + size);
+    drawCtx.bezierCurveTo(x, y + (size + topCurveHeight) / 1.4, x + size / 2, y + (size + topCurveHeight) / 2, x + size / 2, y + topCurveHeight);
+    drawCtx.bezierCurveTo(x + size / 2, y, x, y, x, y + topCurveHeight);
+    drawCtx.closePath();
+    drawCtx.stroke();
+}
+
+function processVoiceCommand(transcript) {
+    const text = transcript.toLowerCase().trim();
+
+    // Shape Commands
+    if (text.includes('draw a circle') || text.includes('draw circle') || text.includes('create circle') || text === 'circle') {
+        generateShapeFromVoice('circle');
+    } else if (text.includes('draw a rectangle') || text.includes('draw rectangle') || text.includes('draw a square') || text.includes('draw square')) {
+        generateShapeFromVoice('rectangle');
+    } else if (text.includes('draw a triangle') || text.includes('draw triangle')) {
+        generateShapeFromVoice('triangle');
+    } else if (text.includes('draw a star') || text.includes('draw star')) {
+        generateShapeFromVoice('star');
+    } else if (text.includes('draw a heart') || text.includes('draw heart')) {
+        generateShapeFromVoice('heart');
+    }
+    // Color Commands
+    else if (text.includes('red color') || text.includes('color red') || text.includes('change to red')) {
+        setColor('#ff3366');
+        showToast('🎙️ Voice Command: Selected Red Brush');
+    } else if (text.includes('green color') || text.includes('color green') || text.includes('change to green')) {
+        setColor('#00e676');
+        showToast('🎙️ Voice Command: Selected Green Brush');
+    } else if (text.includes('blue color') || text.includes('color blue') || text.includes('change to blue')) {
+        setColor('#2979ff');
+        showToast('🎙️ Voice Command: Selected Blue Brush');
+    }
+    // Action Commands
+    else if (text.includes('clear canvas') || text.includes('erase all') || text.includes('clean canvas')) {
+        clearCanvas();
+    } else if (text.includes('save drawing') || text.includes('save canvas') || text.includes('save snapshot')) {
+        saveDrawingToDashboard();
+    } else if (text.includes('run ocr') || text.includes('read text') || text.includes('scan text')) {
+        runOCR();
+    }
+}
+
+// -------------------------------------------------------------
+// 5. AI OCR Recognition (Tesseract.js)
 // -------------------------------------------------------------
 async function runOCR() {
     try {
@@ -188,7 +439,6 @@ async function runOCR() {
         }
         showToast('Running AI OCR on Canvas...');
 
-        // Convert drawing canvas to image
         const imgData = drawingCanvas.toDataURL('image/png');
 
         if (typeof Tesseract !== 'undefined') {
@@ -209,10 +459,7 @@ async function runOCR() {
             playChime(750);
             showToast(`OCR Detected: "${lastExtractedOcr.slice(0, 25)}..."`);
 
-            // Auto-translate if text found
-            if (text) {
-                translateText(text);
-            }
+            if (text) translateText(text);
         } else {
             showToast('OCR engine loading, please try again.');
         }
@@ -231,7 +478,7 @@ if (canvasOcrBtn) canvasOcrBtn.addEventListener('click', runOCR);
 if (runOcrMainBtn) runOcrMainBtn.addEventListener('click', runOCR);
 
 // -------------------------------------------------------------
-// 4. Text-to-Speech (TTS Voice Readout Engine)
+// 6. Text-to-Speech (TTS) & Multi-Language Translation
 // -------------------------------------------------------------
 function speakText(text, lang = 'en-US') {
     if (!text || !text.trim()) {
@@ -240,14 +487,13 @@ function speakText(text, lang = 'en-US') {
     }
 
     if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Stop ongoing speech
+        window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
         utterance.rate = 0.95;
         utterance.pitch = 1.0;
 
-        // Pick matching natural voice if available
         const voices = window.speechSynthesis.getVoices();
         const matchedVoice = voices.find(v => v.lang.startsWith(lang.slice(0, 2)));
         if (matchedVoice) utterance.voice = matchedVoice;
@@ -286,9 +532,6 @@ if (copyOcrBtn) {
     });
 }
 
-// -------------------------------------------------------------
-// 5. Multi-Language Translation Engine
-// -------------------------------------------------------------
 async function translateText(sourceText) {
     const text = sourceText || (ocrExtractedText ? ocrExtractedText.value : '');
     const targetLang = targetLangSelect ? targetLangSelect.value : 'te';
@@ -318,9 +561,7 @@ async function translateText(sourceText) {
     }
 }
 
-if (translateActionBtn) {
-    translateActionBtn.addEventListener('click', () => translateText());
-}
+if (translateActionBtn) translateActionBtn.addEventListener('click', () => translateText());
 
 if (speakTranslationBtn) {
     speakTranslationBtn.addEventListener('click', () => {
@@ -332,7 +573,7 @@ if (speakTranslationBtn) {
 }
 
 // -------------------------------------------------------------
-// 6. Save Drawing & Gallery Dashboard
+// 7. Save Drawing & Gallery Dashboard
 // -------------------------------------------------------------
 async function saveDrawingToDashboard() {
     try {
@@ -442,7 +683,7 @@ window.deleteDrawing = async function(id) {
 };
 
 // -------------------------------------------------------------
-// 7. Analytics Sync
+// 8. Analytics Sync
 // -------------------------------------------------------------
 async function loadAnalytics() {
     try {
@@ -452,6 +693,7 @@ async function loadAnalytics() {
         statStrokes.textContent = data.total_strokes || 0;
         statDrawings.textContent = data.total_drawings_saved || 0;
         statSpeechCount.textContent = data.total_speech_segments || 0;
+        statShapesSnapped.textContent = sessionShapesSnapped || 0;
         statOcrRuns.textContent = (data.total_ocr_runs || 0) + (data.total_translations || 0);
 
         if (data.speech_transcripts && data.speech_transcripts.length > 0) {
@@ -486,7 +728,7 @@ setInterval(() => {
 }, 5000);
 
 // -------------------------------------------------------------
-// 8. Gesture Detection Helper
+// 9. Gesture Detection Helper
 // -------------------------------------------------------------
 function analyzeHand(landmarks) {
     const indexUp = landmarks[8].y < landmarks[6].y;
@@ -503,7 +745,7 @@ function analyzeHand(landmarks) {
 }
 
 // -------------------------------------------------------------
-// 9. MediaPipe Hands Setup
+// 10. MediaPipe Hands Setup
 // -------------------------------------------------------------
 const hands = new Hands({
     locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
@@ -594,7 +836,14 @@ function onResults(results) {
         // Case 1: Fist Gesture -> Eraser
         if (gesture.isFist) {
             currentMode = 'Eraser Mode (Fist)';
+
+            // Finish pending stroke & check shape
+            if (currentStrokePoints.length > 0) {
+                analyzeAndSnapShape(currentStrokePoints);
+                currentStrokePoints = [];
+            }
             prevPoint = null;
+            canvasSnapshotBeforeStroke = null;
 
             camCtx.strokeStyle = '#ef4444';
             camCtx.lineWidth = 3;
@@ -610,7 +859,14 @@ function onResults(results) {
         // Case 2: Two Fingers Up -> Selection / Hover
         else if (gesture.indexUp && gesture.middleUp) {
             currentMode = 'Selection Mode (Hover)';
+
+            // Finish pending stroke & check shape
+            if (currentStrokePoints.length > 0) {
+                analyzeAndSnapShape(currentStrokePoints);
+                currentStrokePoints = [];
+            }
             prevPoint = null;
+            canvasSnapshotBeforeStroke = null;
 
             camCtx.fillStyle = currentColor;
             camCtx.strokeStyle = '#ffffff';
@@ -636,6 +892,12 @@ function onResults(results) {
             currentMode = 'Drawing / Writing Mode';
             sessionStrokes++;
 
+            // Start new stroke: capture snapshot before drawing
+            if (currentStrokePoints.length === 0) {
+                canvasSnapshotBeforeStroke = drawCtx.getImageData(0, 0, w, h);
+            }
+            currentStrokePoints.push({ x: xTip, y: yTip });
+
             camCtx.fillStyle = currentColor;
             camCtx.beginPath();
             camCtx.arc(xTip, yTip, 8, 0, 2 * Math.PI);
@@ -654,18 +916,29 @@ function onResults(results) {
             prevPoint = { x: xTip, y: yTip };
         } else {
             currentMode = 'Standby';
+            // Finger lifted / paused -> analyze and snap shape!
+            if (currentStrokePoints.length > 0) {
+                analyzeAndSnapShape(currentStrokePoints);
+                currentStrokePoints = [];
+            }
             prevPoint = null;
+            canvasSnapshotBeforeStroke = null;
         }
     } else {
         currentMode = 'No Hand Detected';
+        if (currentStrokePoints.length > 0) {
+            analyzeAndSnapShape(currentStrokePoints);
+            currentStrokePoints = [];
+        }
         prevPoint = null;
+        canvasSnapshotBeforeStroke = null;
     }
 
     modeText.textContent = currentMode;
 }
 
 // -------------------------------------------------------------
-// 10. Start Webcam Loop
+// 11. Start Webcam Loop
 // -------------------------------------------------------------
 const camera = new Camera(videoElement, {
     onFrame: async () => {
@@ -685,7 +958,7 @@ camera.start().then(() => {
 });
 
 // -------------------------------------------------------------
-// 11. Ultra-Fast Web Speech Recognition
+// 12. Ultra-Fast Web Speech Recognition & Voice Commands
 // -------------------------------------------------------------
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -725,6 +998,9 @@ if (SpeechRecognition) {
                 const trimmedFinal = currentFinal.trim();
                 lastFinalTranscript = (lastFinalTranscript + ' ' + trimmedFinal).slice(-150).trim();
                 currentActiveCaption = trimmedFinal;
+
+                // Process Voice Commands (e.g. "Draw a circle", "Red color")
+                processVoiceCommand(trimmedFinal);
 
                 fetch('/api/log_speech', {
                     method: 'POST',
@@ -773,7 +1049,7 @@ if (SpeechRecognition) {
 }
 
 // -------------------------------------------------------------
-// 12. Accessibility Features Toggles
+// 13. Accessibility Features Toggles
 // -------------------------------------------------------------
 if (largeCaptionToggle) {
     largeCaptionToggle.addEventListener('change', (e) => {
