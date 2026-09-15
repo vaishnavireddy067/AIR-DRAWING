@@ -26,7 +26,6 @@ else:
 
 os.makedirs(SAVED_DIR, exist_ok=True)
 
-# Helper functions for metadata
 def load_meta():
     if os.path.exists(META_FILE):
         try:
@@ -85,7 +84,8 @@ def index():
 def health():
     return jsonify({
         "status": "online",
-        "app": "Multimodal AI Interaction System",
+        "app": "AirCanvas AI",
+        "tagline": "AI-Powered Multimodal Air Drawing & Interaction Platform",
         "features": ["Air Drawing", "Speech-to-Text", "Auto-Shape Beautifier", "Voice AI Generator", "AI OCR", "TTS", "Translation"]
     })
 
@@ -265,7 +265,7 @@ if __name__ == '__main__':
         port = find_free_port()
 
     print("==================================================")
-    print("  Multimodal AI Interaction System (Vercel Ready)")
+    print("  AirCanvas AI: Multimodal Air Drawing Platform")
     print(f"  --> http://127.0.0.1:{port}")
     print("==================================================")
     

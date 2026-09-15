@@ -1,4 +1,5 @@
-# Multimodal AI Suite: Air Drawing, Speech, OCR, TTS & Translation 🎨🎙️📷🔊🌐
+# AirCanvas AI 🎨🎙️🧠✨
+### *AI-Powered Multimodal Air Drawing & Interaction Platform*
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-vaishnavireddy067%2FAIR--DRAWING-blue?logo=github)](https://github.com/vaishnavireddy067/AIR-DRAWING)
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvaishnavireddy067%2FAIR-DRAWING)
@@ -7,19 +8,19 @@
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-Hand%20Tracking-00A98F?logo=google&logoColor=white)](https://developers.google.com/mediapipe)
 [![Tesseract OCR](https://img.shields.io/badge/Tesseract-AI%20OCR-orange)](https://github.com/naptha/tesseract.js)
 
-A complete **5-in-1 Multimodal AI Interaction System** combining Computer Vision, Hand Gesture Tracking, Real-Time Speech Recognition, Voice AI Generative Drawing, Auto-Shape Beautifier, Optical Character Recognition (OCR), Text-to-Speech (TTS), Multi-Language Translation, and an interactive Dashboard Gallery.
+**AirCanvas AI** is an intelligent, touch-free computer vision and voice-driven creative suite. It turns any standard webcam into a virtual whiteboard where users can draw in the air using hand gestures, auto-snap rough sketches into clean geometric shapes, generate drawings with voice commands, extract handwriting with AI OCR, listen to text with Text-to-Speech (TTS), and translate content across multiple languages.
 
 ---
 
 ## ⚡ 1-Click Vercel Deployment
 
-Deploy this full web app to **Vercel** with one click:
+Deploy **AirCanvas AI** to **Vercel** with one click:
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvaishnavireddy067%2FAIR-DRAWING)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvaishnavireddy067%2FAIR--DRAWING)
 
 1. Connect your GitHub account on [Vercel](https://vercel.com).
 2. Select repository `vaishnavireddy067/AIR-DRAWING`.
-3. Click **Deploy** (No special environment variables required).
+3. Click **Deploy** (Zero setup required).
 
 ---
 
@@ -27,7 +28,8 @@ Deploy this full web app to **Vercel** with one click:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                    MULTIMODAL AI INTERACTION SYSTEM                          │
+│                              AIRCANVAS AI                                    │
+│             AI-Powered Multimodal Air Drawing & Interaction Platform         │
 └───────┬──────────────┬───────────────┬────────────────┬───────────────┬──────┘
         │              │               │                │               │
         ▼              ▼               ▼                ▼               ▼
@@ -37,10 +39,10 @@ Deploy this full web app to **Vercel** with one click:
  - Fist Erase      - Dynamic Waveform  - Handwritings   - Multilingual   - Spanish, French...
 ```
 
-### 1. ✋ Air Drawing & Auto-Shape Recognition
+### 1. ✋ Air Drawing & Auto-Shape Beautifier
 - **☝️ Single Index Finger Up**: Draw freehand lines, letters, or mathematical symbols in the air.
-- **✨ Auto-Shape Beautifier**: Rough hand circles (○), rectangles (▭), and lines (―) automatically snap into clean geometric shapes when you lift your finger.
-- **✌️ Two Fingers Up (Index + Middle)**: Selection & hover mode over toolbar options.
+- **✨ Auto-Shape Snap**: Rough hand circles (○), rectangles (▭), and lines (―) automatically snap into clean geometric shapes when you lift your finger.
+- **✌️ Two Fingers Up (Index + Middle)**: Selection & hover mode over toolbar options without drawing marks.
 - **✊ Fist Gesture**: Circular spatial eraser.
 
 ### 2. 🎙️ Real-Time Speech-to-Text & Voice AI Generator
