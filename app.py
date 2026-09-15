@@ -5,6 +5,8 @@ import time
 import socket
 import webbrowser
 import threading
+import urllib.parse
+import urllib.request
 from datetime import datetime
 from flask import Flask, render_template, jsonify, send_file, request, send_from_directory
 
@@ -44,6 +46,8 @@ def load_analytics():
         "total_drawings_saved": 0,
         "total_speech_segments": 0,
         "total_gestures_detected": 0,
+        "total_ocr_runs": 0,
+        "total_translations": 0,
         "speech_transcripts": []
     }
 
@@ -67,7 +71,7 @@ def index():
 
 @app.route('/health')
 def health():
-    return jsonify({"status": "online", "app": "Multimodal AI Interaction System"})
+    return jsonify({"status": "online", "app": "Multimodal AI Interaction System (Air Drawing, Speech, OCR, TTS, Translation)"})
 
 # Serve saved drawings
 @app.route('/saved_drawings/<path:filename>')
@@ -87,12 +91,12 @@ def save_drawing():
         data = request.get_json()
         image_b64 = data.get('image', '')
         caption = data.get('caption', '').strip()
+        ocr_text = data.get('ocr_text', '').strip()
         color = data.get('color', '#00e676')
 
         if not image_b64:
             return jsonify({"error": "No image data provided"}), 400
 
-        # Remove header if present
         if 'base64,' in image_b64:
             image_b64 = image_b64.split('base64,')[1]
 
@@ -110,16 +114,16 @@ def save_drawing():
             "filename": filename,
             "url": f"/saved_drawings/{filename}",
             "caption": caption or "No speech caption recorded",
+            "ocr_text": ocr_text or "No OCR text extracted",
             "color": color,
             "created_at": datetime.now().strftime("%d %b %Y, %I:%M:%S %p"),
             "timestamp": time.time()
         }
 
         meta = load_meta()
-        meta.insert(0, drawing_item) # Most recent first
+        meta.insert(0, drawing_item)
         save_meta(meta)
 
-        # Update analytics count
         analytics = load_analytics()
         analytics["total_drawings_saved"] = len(meta)
         save_analytics(analytics)
@@ -155,6 +159,41 @@ def delete_drawing(draw_id):
         return jsonify({"success": True})
     return jsonify({"error": "Drawing not found"}), 404
 
+# API: Translation Engine (Translates between English, Telugu, Hindi, Spanish, French, etc.)
+@app.route('/api/translate', methods=['POST'])
+def translate_text():
+    try:
+        data = request.get_json()
+        text = data.get('text', '').strip()
+        source_lang = data.get('source_lang', 'en')
+        target_lang = data.get('target_lang', 'te')
+
+        if not text:
+            return jsonify({"translated_text": ""})
+
+        # Query MyMemory Translation API
+        encoded_query = urllib.parse.quote(text)
+        url = f"https://api.mymemory.translated.net/get?q={encoded_query}&langpair={source_lang}|{target_lang}"
+        
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            translated_text = res_data.get('responseData', {}).get('translatedText', text)
+
+        analytics = load_analytics()
+        analytics["total_translations"] = analytics.get("total_translations", 0) + 1
+        save_analytics(analytics)
+
+        return jsonify({
+            "success": True,
+            "original_text": text,
+            "translated_text": translated_text,
+            "source_lang": source_lang,
+            "target_lang": target_lang
+        })
+    except Exception as e:
+        return jsonify({"error": str(e), "translated_text": text}), 500
+
 # API: Log Speech Transcript
 @app.route('/api/log_speech', methods=['POST'])
 def log_speech():
@@ -170,7 +209,6 @@ def log_speech():
                 "lang": lang,
                 "time": datetime.now().strftime("%I:%M:%S %p")
             })
-            # Keep last 100 transcripts
             analytics["speech_transcripts"] = analytics["speech_transcripts"][:100]
             save_analytics(analytics)
         return jsonify({"success": True})
@@ -192,9 +230,11 @@ def update_stats():
         data = request.get_json()
         strokes = data.get('strokes', 0)
         gestures = data.get('gestures', 0)
+        ocr_runs = data.get('ocr_runs', 0)
         analytics = load_analytics()
         analytics["total_strokes"] += strokes
         analytics["total_gestures_detected"] += gestures
+        analytics["total_ocr_runs"] = analytics.get("total_ocr_runs", 0) + ocr_runs
         save_analytics(analytics)
         return jsonify({"success": True})
     except Exception as e:
@@ -210,7 +250,8 @@ if __name__ == '__main__':
         port = find_free_port()
 
     print("==================================================")
-    print("  Multimodal AI Interaction System running on:")
+    print("  Multimodal AI Interaction System (5-in-1 Suite)")
+    print("  Air Drawing | Speech | OCR | TTS | Translation")
     print(f"  --> http://127.0.0.1:{port}")
     print("==================================================")
     

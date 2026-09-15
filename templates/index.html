@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multimodal AI Interaction System - Air Drawing & Speech Dashboard</title>
+    <title>Multimodal AI System - Air Drawing, Speech, OCR, TTS & Translation</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,17 +16,19 @@
     <!-- MediaPipe Hands & Camera Utils -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <!-- Tesseract.js for Browser-Side OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
     <!-- Top Header / Navigation -->
     <header class="navbar">
         <div class="logo-container">
             <div class="logo-icon">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <i class="fa-solid fa-brain"></i>
             </div>
             <div class="logo-text">
-                <h1>Multimodal AI System</h1>
-                <span class="sub-badge">Gesture + Speech Interaction</span>
+                <h1>Multimodal AI Suite</h1>
+                <span class="sub-badge">Air Drawing • Speech • OCR • TTS • Translation</span>
             </div>
         </div>
 
@@ -35,11 +37,14 @@
             <button class="nav-tab active" data-tab="studioTab">
                 <i class="fa-solid fa-paintbrush"></i> Live Studio
             </button>
+            <button class="nav-tab" data-tab="ocrTab" id="ocrTabBtn">
+                <i class="fa-solid fa-language"></i> AI OCR & Translation
+            </button>
             <button class="nav-tab" data-tab="galleryTab" id="galleryTabBtn">
                 <i class="fa-solid fa-images"></i> Saved Gallery <span class="badge" id="galleryCountBadge">0</span>
             </button>
             <button class="nav-tab" data-tab="analyticsTab" id="analyticsTabBtn">
-                <i class="fa-solid fa-chart-pie"></i> Analytics & Logs
+                <i class="fa-solid fa-chart-pie"></i> Analytics
             </button>
             <button class="nav-tab" data-tab="accessibilityTab">
                 <i class="fa-solid fa-universal-access"></i> Accessibility
@@ -49,13 +54,13 @@
         <!-- Color & Action Toolbar -->
         <div class="toolbar" id="topToolbar">
             <div class="color-picker-group">
-                <button class="color-btn" data-color="#ff3366" style="--c: #ff3366" title="Red Color (Hover or Click)">
+                <button class="color-btn" data-color="#ff3366" style="--c: #ff3366" title="Red Color">
                     <span class="dot"></span> Red
                 </button>
-                <button class="color-btn active" data-color="#00e676" style="--c: #00e676" title="Green Color (Hover or Click)">
+                <button class="color-btn active" data-color="#00e676" style="--c: #00e676" title="Green Color">
                     <span class="dot"></span> Green
                 </button>
-                <button class="color-btn" data-color="#2979ff" style="--c: #2979ff" title="Blue Color (Hover or Click)">
+                <button class="color-btn" data-color="#2979ff" style="--c: #2979ff" title="Blue Color">
                     <span class="dot"></span> Blue
                 </button>
             </div>
@@ -63,11 +68,14 @@
             <div class="divider"></div>
 
             <div class="action-group">
-                <button id="clearBtn" class="action-btn clear-btn" title="Clear Canvas (Hover or Click)">
+                <button id="ocrQuickBtn" class="action-btn ocr-btn" title="Extract text using AI OCR (Press 'O')">
+                    <i class="fa-solid fa-eye"></i> OCR Read
+                </button>
+                <button id="clearBtn" class="action-btn clear-btn" title="Clear Canvas (Press 'C')">
                     <i class="fa-solid fa-trash-can"></i> Clear
                 </button>
-                <button id="saveBtn" class="action-btn save-btn" title="Save to Dashboard Gallery">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> Save & Snapshot
+                <button id="saveBtn" class="action-btn save-btn" title="Save to Dashboard Gallery (Press 'S')">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Save
                 </button>
             </div>
         </div>
@@ -76,20 +84,20 @@
         <div class="status-panel">
             <div class="mode-pill" id="modePill">
                 <span class="status-dot"></span>
-                <span id="modeText">Initializing...</span>
+                <span id="modeText">Initializing AI...</span>
             </div>
         </div>
     </header>
 
-    <!-- TAB 1: LIVE STUDIO (Dual Screen + Captions) -->
+    <!-- TAB 1: LIVE STUDIO (Dual Screen + Live OCR & TTS Widget) -->
     <main class="tab-content active" id="studioTab">
         <div class="workspace-container">
-            <!-- Left Panel: Live Camera Feed with Landmarks & Drawing Overlay -->
+            <!-- Left Panel: Live Camera Feed with Hand Tracking -->
             <section class="screen-card camera-card">
                 <div class="card-header">
                     <div class="title-with-icon">
                         <i class="fa-solid fa-video camera-icon"></i>
-                        <h2>Live Camera & Hand Tracking</h2>
+                        <h2>Live Camera & Gesture Tracking</h2>
                     </div>
                     <div class="chip" id="camStatus">
                         <i class="fa-solid fa-circle-notch fa-spin"></i> Loading AI...
@@ -102,21 +110,26 @@
                 </div>
 
                 <div class="gestures-hint">
-                    <span><i class="fa-solid fa-hand-pointer"></i> <b>1 Finger:</b> Draw</span>
+                    <span><i class="fa-solid fa-hand-pointer"></i> <b>1 Finger:</b> Draw / Write</span>
                     <span><i class="fa-solid fa-peace"></i> <b>2 Fingers:</b> Select Buttons</span>
-                    <span><i class="fa-solid fa-hand-fist"></i> <b>Fist:</b> Erase Stroke</span>
+                    <span><i class="fa-solid fa-hand-fist"></i> <b>Fist:</b> Erase</span>
                 </div>
             </section>
 
-            <!-- Right Panel: Pure Virtual Drawing Canvas -->
+            <!-- Right Panel: Pure Virtual Drawing Canvas + Smart OCR Floating Bar -->
             <section class="screen-card canvas-card">
                 <div class="card-header">
                     <div class="title-with-icon">
                         <i class="fa-solid fa-palette palette-icon"></i>
                         <h2>AI Virtual Canvas</h2>
                     </div>
-                    <div class="chip live-chip">
-                        <span class="pulse-dot"></span> Real-time Sync
+                    <div class="ocr-mini-actions">
+                        <button class="mini-btn" id="canvasOcrBtn" title="Extract text drawn on canvas">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Run OCR
+                        </button>
+                        <button class="mini-btn" id="canvasSpeakBtn" title="Speak out canvas text (TTS)">
+                            <i class="fa-solid fa-volume-high"></i> Read Aloud
+                        </button>
                     </div>
                 </div>
 
@@ -125,21 +138,93 @@
                 </div>
 
                 <div class="shortcuts-hint">
-                    <span><b>Press 'S':</b> Save to Dashboard</span>
-                    <span><b>Press 'C':</b> Clear All</span>
-                    <span><b>Multimodal:</b> Hand + Voice Enabled</span>
+                    <span><b>'O':</b> AI OCR Read</span>
+                    <span><b>'S':</b> Save Snapshot</span>
+                    <span><b>'C':</b> Clear All</span>
                 </div>
             </section>
         </div>
     </main>
 
-    <!-- TAB 2: SAVED GALLERY DASHBOARD -->
+    <!-- TAB 2: AI OCR, TTS & TRANSLATION STUDIO -->
+    <section class="tab-content" id="ocrTab">
+        <div class="dashboard-page">
+            <div class="dashboard-header">
+                <div>
+                    <h2><i class="fa-solid fa-language"></i> AI OCR, Text-to-Speech & Translation Hub</h2>
+                    <p class="subtitle">Extract text written in the air, listen to natural voice readouts (TTS), and translate into multiple languages.</p>
+                </div>
+                <button class="action-btn save-btn" id="runOcrMainBtn">
+                    <i class="fa-solid fa-qrcode"></i> Scan Canvas Now
+                </button>
+            </div>
+
+            <div class="ocr-studio-grid">
+                <!-- OCR Recognition Card -->
+                <div class="ocr-card">
+                    <div class="ocr-card-header">
+                        <div class="title-with-icon">
+                            <i class="fa-solid fa-font icon-cyan"></i>
+                            <h3>📷 1. Extracted Text (AI OCR)</h3>
+                        </div>
+                        <div class="ocr-status-chip" id="ocrStatusChip">
+                            <i class="fa-solid fa-check"></i> Ready
+                        </div>
+                    </div>
+                    <textarea id="ocrExtractedText" class="ocr-textarea" placeholder="Draw letters in the air and click 'Run OCR' or press 'O' to extract text here..."></textarea>
+                    
+                    <div class="card-button-row">
+                        <button class="feature-btn btn-tts" id="speakOcrBtn">
+                            <i class="fa-solid fa-volume-high"></i> 🔊 Speak Text (TTS)
+                        </button>
+                        <button class="feature-btn btn-copy" id="copyOcrBtn">
+                            <i class="fa-solid fa-copy"></i> Copy Text
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Translation Engine Card -->
+                <div class="ocr-card">
+                    <div class="ocr-card-header">
+                        <div class="title-with-icon">
+                            <i class="fa-solid fa-globe icon-purple"></i>
+                            <h3>🌐 2. Multi-Language Translation</h3>
+                        </div>
+                        <div class="target-lang-select-group">
+                            <span>Translate to:</span>
+                            <select id="targetLangSelect" class="lang-select-box">
+                                <option value="te" selected>Telugu (తెలుగు)</option>
+                                <option value="hi">Hindi (हिंदी)</option>
+                                <option value="es">Spanish (Español)</option>
+                                <option value="fr">French (Français)</option>
+                                <option value="de">German (Deutsch)</option>
+                                <option value="ja">Japanese (日本語)</option>
+                                <option value="en">English</option>
+                            </select>
+                        </div>
+                    </div>
+                    <textarea id="translatedTextOutput" class="ocr-textarea translation-area" placeholder="Translation output will appear here..." readonly></textarea>
+                    
+                    <div class="card-button-row">
+                        <button class="feature-btn btn-translate" id="translateActionBtn">
+                            <i class="fa-solid fa-language"></i> 🌐 Translate Now
+                        </button>
+                        <button class="feature-btn btn-tts" id="speakTranslationBtn">
+                            <i class="fa-solid fa-volume-high"></i> 🔊 Speak Translation (TTS)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TAB 3: SAVED GALLERY DASHBOARD -->
     <section class="tab-content" id="galleryTab">
         <div class="dashboard-page">
             <div class="dashboard-header">
                 <div>
                     <h2><i class="fa-solid fa-images"></i> Saved Drawings & Snapshots Dashboard</h2>
-                    <p class="subtitle">All drawings saved during your multimodal interaction sessions with attached voice captions.</p>
+                    <p class="subtitle">Sketches saved during interaction with paired voice captions & OCR transcripts.</p>
                 </div>
                 <button class="action-btn save-btn" id="refreshGalleryBtn">
                     <i class="fa-solid fa-rotate"></i> Refresh Gallery
@@ -154,19 +239,17 @@
             </div>
 
             <!-- Gallery Grid Cards -->
-            <div class="gallery-grid" id="galleryGrid">
-                <!-- Injected via JavaScript -->
-            </div>
+            <div class="gallery-grid" id="galleryGrid"></div>
         </div>
     </section>
 
-    <!-- TAB 3: MULTIMODAL ANALYTICS & LOGS -->
+    <!-- TAB 4: MULTIMODAL ANALYTICS & LOGS -->
     <section class="tab-content" id="analyticsTab">
         <div class="dashboard-page">
             <div class="dashboard-header">
                 <div>
                     <h2><i class="fa-solid fa-chart-pie"></i> Multimodal AI Interaction Analytics</h2>
-                    <p class="subtitle">Real-time statistics on hand gestures, speech recognition accuracy, and interaction history.</p>
+                    <p class="subtitle">Real-time metrics for hand gestures, speech recognition, OCR runs, and translations.</p>
                 </div>
             </div>
 
@@ -188,7 +271,7 @@
                     </div>
                     <div class="stat-info">
                         <span class="stat-value" id="statDrawings">0</span>
-                        <span class="stat-label">Saved Dashboard Artifacts</span>
+                        <span class="stat-label">Saved Canvas Artifacts</span>
                     </div>
                 </div>
 
@@ -198,17 +281,17 @@
                     </div>
                     <div class="stat-info">
                         <span class="stat-value" id="statSpeechCount">0</span>
-                        <span class="stat-label">Speech Utterances Detected</span>
+                        <span class="stat-label">Speech Utterances</span>
                     </div>
                 </div>
 
                 <div class="stat-card">
                     <div class="stat-icon" style="background: rgba(236, 72, 153, 0.2); color: #f472b6;">
-                        <i class="fa-solid fa-hand"></i>
+                        <i class="fa-solid fa-eye"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-value" id="statGestures">0</span>
-                        <span class="stat-label">Gestures Processed</span>
+                        <span class="stat-value" id="statOcrRuns">0</span>
+                        <span class="stat-label">OCR & Translations</span>
                     </div>
                 </div>
             </div>
@@ -217,16 +300,14 @@
             <div class="analytics-card">
                 <div class="card-inner-header">
                     <h3><i class="fa-solid fa-comments"></i> Speech Recognition Transcript History</h3>
-                    <span class="chip"><i class="fa-solid fa-clock"></i> Live Feed Log</span>
+                    <span class="chip"><i class="fa-solid fa-clock"></i> Live Log</span>
                 </div>
-                <div class="transcript-list" id="transcriptList">
-                    <!-- Injected via JavaScript -->
-                </div>
+                <div class="transcript-list" id="transcriptList"></div>
             </div>
         </div>
     </section>
 
-    <!-- TAB 4: ACCESSIBILITY ASSISTANT -->
+    <!-- TAB 5: ACCESSIBILITY ASSISTANT -->
     <section class="tab-content" id="accessibilityTab">
         <div class="dashboard-page">
             <div class="dashboard-header">
@@ -298,11 +379,11 @@
         <div class="caption-container">
             <p id="captionText" class="caption-text">
                 <span class="caption-final">Speak into your mic: </span>
-                <span class="caption-interim">captions will stream instantly here word-by-word...</span>
+                <span class="caption-interim">captions stream instantly here word-by-word...</span>
             </p>
         </div>
         
-        <!-- Speech Language Selector for Exact Accuracy -->
+        <!-- Speech Language Selector -->
         <div class="lang-selector-wrapper">
             <i class="fa-solid fa-language lang-icon"></i>
             <select id="speechLang" class="lang-select" title="Select Speech Language">
@@ -317,7 +398,7 @@
     <!-- Toast Notification Popup -->
     <div class="toast-notification" id="toastNotification">
         <i class="fa-solid fa-circle-check"></i>
-        <span id="toastMessage">Drawing saved to Dashboard Gallery!</span>
+        <span id="toastMessage">Action completed successfully!</span>
     </div>
 
     <!-- Main Logic Script -->

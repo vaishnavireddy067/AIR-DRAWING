@@ -3,5 +3,6 @@
   "total_drawings_saved": 0,
   "total_speech_segments": 0,
   "total_gestures_detected": 66,
-  "speech_transcripts": []
+  "speech_transcripts": [],
+  "total_translations": 1
 }

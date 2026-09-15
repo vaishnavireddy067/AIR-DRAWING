@@ -1,143 +1,101 @@
-# AI Air Drawing & Multimodal Interaction System 🎨🎙️🧠✨
+# Multimodal AI Suite: Air Drawing, Speech, OCR, TTS & Translation 🎨🎙️📷🔊🌐
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-vaishnavireddy067%2FAIR--DRAWING-blue?logo=github)](https://github.com/vaishnavireddy067/AIR-DRAWING)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-Web%20Dashboard-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-5C3EE8?logo=opencv&logoColor=white)](https://opencv.org/)
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-Hand%20Tracking-00A98F?logo=google&logoColor=white)](https://developers.google.com/mediapipe)
+[![Tesseract OCR](https://img.shields.io/badge/Tesseract-AI%20OCR-orange)](https://github.com/naptha/tesseract.js)
 
-An AI-powered **Multimodal Interaction System** that turns your webcam into an interactive touch-free virtual whiteboard. Draw in the air using hand gestures, switch colors, erase content, view drawings on a clean dual canvas, and experience real-time speech-to-text captions with an interactive dashboard gallery and analytics.
+A complete **5-in-1 Multimodal AI Interaction System** combining Computer Vision, Hand Gesture Tracking, Real-Time Speech Recognition, Optical Character Recognition (OCR), Text-to-Speech (TTS), Multi-Language Translation, and an interactive Dashboard Gallery.
 
 ---
 
-## 🌟 Key Features
+## 🚀 Live Local Web Deployment Link
 
-### ✋ 1. Hand Gesture Detection (AI / Computer Vision)
-- **Air Drawing**: Single index finger up (`☝️`) lets you draw freely in the air.
-- **Button Selection**: Two fingers up (`✌️`) allows you to hover and select toolbar options without drawing unwanted lines.
-- **Fist Eraser**: Closed fist (`✊`) activates a spatial circular eraser.
+👉 **[http://127.0.0.1:5000](http://127.0.0.1:5000)** (or `http://localhost:5000`)
+
+---
+
+## 🌟 5 Core Multimodal AI Pillars
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                    MULTIMODAL AI INTERACTION SYSTEM                          │
+└───────┬──────────────┬───────────────┬────────────────┬───────────────┬──────┘
+        │              │               │                │               │
+        ▼              ▼               ▼                ▼               ▼
+ ✋ 1. Air Drawing 🎙️ 2. Speech-to-Text 📷 3. AI OCR  🔊 4. TTS Voice  🌐 5. Translation
+ - 1 Finger Draw   - Instant Word Stream - Tesseract.js - Natural Speech - Telugu (తెలుగు)
+ - 2 Finger Select - Multi-Language    - Canvas Read    - Read Aloud     - Hindi (हिंदी)
+ - Fist Erase      - Dynamic Waveform  - Handwritings   - Multilingual   - Spanish, French...
+```
+
+### 1. ✋ Air Drawing (Gesture Control)
+- **☝️ Single Index Finger Up**: Draw freehand lines, letters, or mathematical symbols on the canvas in the air.
+- **✌️ Two Fingers Up (Index + Middle)**: Selection & hover mode over toolbar options.
+- **✊ Fist Gesture**: Circular gesture-based eraser.
 - **Dual Live Display**: Live camera feed with 21-point hand skeleton tracking on the left, pure virtual white canvas on the right.
 
-### 🎙️ 2. Real-Time Speech-to-Text Captions
+### 2. 🎙️ Speech-to-Text (Real-Time Captions)
 - **Zero-Latency Word-by-Word Streaming**: Spoken words are instantly converted into subtitles with glowing visual audio waveforms.
-- **Multi-Language Support**:
-  - 🇮🇳 **English (India)**
-  - 🇺🇸 **English (US)**
+- **Multi-Language Support**: English (India), English (US), Telugu (తెలుగు), Hindi (हिंदी).
+
+### 3. 📷 AI OCR (Handwriting & Text Extraction)
+- **Tesseract.js Engine**: Instantly extracts handwritten characters and letters drawn on the canvas.
+- **Shortcut**: Press **`O`** or click **OCR Read** to scan and copy text.
+
+### 4. 🔊 Text-to-Speech (Natural Voice Readout Engine)
+- **Natural Voice Synthesis**: Automatically reads aloud recognized handwritten text or speech transcripts in natural voice.
+- **Multilingual TTS**: Pronounces translations in their native accent.
+
+### 5. 🌐 Multi-Language Translation Engine
+- **Instant Translation**: Translates recognized text or speech into:
   - 🗣️ **Telugu (తెలుగు)**
   - 🗣️ **Hindi (हिंदी)**
-
-### 🖼️ 3. Saved Drawings Dashboard Gallery
-- **One-Click Snapshots**: Press `s` or click **Save & Snapshot** to archive your drawing directly to the dashboard gallery.
-- **Voice Caption Pairing**: Every saved drawing is automatically linked with the speech uttered during creation.
-- **Artifact Management**: Preview, download high-res PNGs, or delete archived sketches.
-
-### 📊 4. Multimodal Analytics & Interaction History
-- Real-time KPI tracking for drawing strokes, gestures processed, and speech count.
-- Searchable transcript timeline logging all spoken phrases with timestamps.
-
-### ♿ 5. Accessibility Assistance
-- **Large Visual Subtitles**: Hearing assistance mode for clear presentation feedback.
-- **High-Contrast Canvas**: Enhanced stroke borders for visual support.
-- **Audio Chimes**: Instant auditory feedback on tool switching and save actions.
+  - 🇪🇸 **Spanish (Español)**
+  - 🇫🇷 **French (Français)**
+  - 🇩🇪 **German (Deutsch)**
+  - 🇯🇵 **Japanese (日本語)**
 
 ---
 
-## 🏗️ System Architecture
+## 🖼️ Saved Gallery Dashboard & Analytics
 
-```
-                  ┌──────────────────────────────────────────────────────────┐
-                  │          MULTIMODAL AI INTERACTION SYSTEM                │
-                  └─────────────────────────┬────────────────────────────────┘
-                                            │
-        ┌───────────────────┬───────────────┴───────────────┬───────────────────┐
-        ▼                   ▼                               ▼                   ▼
- ✋ Hand Gesture       🎙️ Real-time Speech           🖼️ Saved Gallery      📊 Analytics & Logs
- - 1 Finger: Draw      - Word-by-Word Stream         - Canvas Snapshots    - Stroke Counters
- - 2 Fingers: Select   - Multilingual (EN/TE/HI)     - Voice Caption Link  - Speech History Log
- - Fist: Erase         - Glowing Equalizer           - PNG Download        - Accessibility Hub
-```
-
----
-
-## 📂 Project Structure
-
-```
-AIR-DRAWING/
-│
-├── app.py                     # Flask Web Application & REST APIs
-├── main.py                    # Standalone Native Desktop OpenCV Application
-├── hand_landmarker.task       # MediaPipe Hand Landmark AI Model
-├── requirements.txt           # Project Dependencies
-├── .gitignore                 # Git ignore configuration
-├── README.md                  # Comprehensive Documentation
-│
-├── templates/
-│   └── index.html             # Web Dashboard UI Template
-│
-├── static/
-│   ├── css/
-│   │   └── style.css          # Glassmorphism Modern Styling
-│   └── js/
-│       └── app.js             # Client-side Gesture Tracking & Speech Engine
-│
-└── saved_drawings/            # Storage Directory for Saved Canvas Artifacts
-```
-
----
-
-## ⚙️ Installation & Setup
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/vaishnavireddy067/AIR-DRAWING.git
-cd AIR-DRAWING
-```
-
-### 2. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## ▶️ Running the Project
-
-### Option A: Web Application Dashboard (Recommended)
-```bash
-python app.py
-```
-Open your browser at: **[http://127.0.0.1:5000](http://127.0.0.1:5000)** (or `http://localhost:5000`)
-
-### Option B: Native Desktop OpenCV Window
-```bash
-python main.py
-```
+- **One-Click Snapshots**: Press `s` or click **Save** to store drawings with attached speech captions & OCR transcripts.
+- **Interactive Gallery Grid**: Preview, download PNGs, or delete archived sketches.
+- **Interaction Analytics**: Real-time metrics for strokes, gestures, voice utterances, and OCR runs.
+- **Accessibility Hub**: Large subtitles, high contrast mode, and audio confirmation chimes.
 
 ---
 
 ## 🎮 Hand Gestures & Controls
 
-| Action | Gesture / Control | Description |
+| Action | Control / Gesture | Description |
 | :--- | :---: | :--- |
-| **Draw** | ☝️ Single Index Finger Up | Smooth freehand drawing on canvas |
-| **Select / Hover** | ✌️ Two Fingers (Index + Middle) | Select colors or clear button without drawing |
+| **Draw / Write** | ☝️ Single Index Finger Up | Write letters or draw lines in the air |
+| **Select / Hover** | ✌️ Two Fingers Up | Hover over top color & clear buttons |
 | **Erase** | ✊ Fist Gesture | Erases the area around your hand |
-| **Red Brush** | Top Red Button | Switch to Red ink |
-| **Green Brush** | Top Green Button | Switch to Green ink |
-| **Blue Brush** | Top Blue Button | Switch to Blue ink |
+| **AI OCR Read** | Top OCR Read Button / `o` Key | Extracts text written in the canvas |
 | **Clear Canvas** | Top CLEAR Button / `c` Key | Clears entire canvas |
-| **Save Drawing** | Top SAVE Button / `s` Key | Saves drawing & voice caption to Dashboard Gallery |
-| **Quit (Desktop)** | `q` Key | Closes desktop OpenCV window |
+| **Save to Gallery** | Top SAVE Button / `s` Key | Saves snapshot with speech & OCR data |
 
 ---
 
-## 💡 Technologies Used
+## ⚙️ How to Run
 
-- **Language**: Python 3.10+
-- **Computer Vision**: OpenCV, Google MediaPipe
-- **Voice & NLP**: Web Speech API, SpeechRecognition, SoundDevice
-- **Web Framework**: Flask, REST API
-- **Frontend**: HTML5 Canvas, CSS3 Glassmorphism, Vanilla JavaScript
+```bash
+# 1. Clone the repository
+git clone https://github.com/vaishnavireddy067/AIR-DRAWING.git
+cd AIR-DRAWING
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Run Web App Server
+python app.py
+```
+Open **[http://127.0.0.1:5000](http://127.0.0.1:5000)** in Google Chrome or Microsoft Edge.
 
 ---
 

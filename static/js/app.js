@@ -1,10 +1,10 @@
 /**
- * Multimodal AI Interaction System
- * - ✋ Hand Gesture Detection (MediaPipe Hands)
- * - 🎙️ Real-time Speech Detection & Captions (Web Speech API)
- * - 🖼️ Saved Drawings Dashboard Gallery
- * - 📊 Multimodal Interaction Analytics & Transcript History
- * - ♿ Accessibility Features
+ * Multimodal AI Interaction System (5-in-1 Suite)
+ * 1. ✋ Hand Gesture Detection (Air Drawing & Selection)
+ * 2. 🎙️ Real-time Speech-to-Text Streaming
+ * 3. 📷 AI OCR (Handwriting & Canvas Text Extraction via Tesseract.js)
+ * 4. 🔊 Text-to-Speech (Natural Voice Readout Engine)
+ * 5. 🌐 Multi-Language Translation (Telugu, Hindi, Spanish, etc.)
  */
 
 // DOM Elements
@@ -32,11 +32,26 @@ const refreshGalleryBtn = document.getElementById('refreshGalleryBtn');
 const toastNotification = document.getElementById('toastNotification');
 const toastMessage = document.getElementById('toastMessage');
 
+// OCR, TTS & Translation DOM Elements
+const ocrQuickBtn = document.getElementById('ocrQuickBtn');
+const canvasOcrBtn = document.getElementById('canvasOcrBtn');
+const canvasSpeakBtn = document.getElementById('canvasSpeakBtn');
+const runOcrMainBtn = document.getElementById('runOcrMainBtn');
+const ocrExtractedText = document.getElementById('ocrExtractedText');
+const speakOcrBtn = document.getElementById('speakOcrBtn');
+const copyOcrBtn = document.getElementById('copyOcrBtn');
+const ocrStatusChip = document.getElementById('ocrStatusChip');
+
+const targetLangSelect = document.getElementById('targetLangSelect');
+const translatedTextOutput = document.getElementById('translatedTextOutput');
+const translateActionBtn = document.getElementById('translateActionBtn');
+const speakTranslationBtn = document.getElementById('speakTranslationBtn');
+
 // Analytics DOM Elements
 const statStrokes = document.getElementById('statStrokes');
 const statDrawings = document.getElementById('statDrawings');
 const statSpeechCount = document.getElementById('statSpeechCount');
-const statGestures = document.getElementById('statGestures');
+const statOcrRuns = document.getElementById('statOcrRuns');
 const transcriptList = document.getElementById('transcriptList');
 
 // Accessibility DOM Elements
@@ -45,16 +60,17 @@ const highContrastToggle = document.getElementById('highContrastToggle');
 const audioChimeToggle = document.getElementById('audioChimeToggle');
 
 // Drawing & Tracking State
-let currentColor = '#00e676'; // Default Green
+let currentColor = '#00e676';
 let brushThickness = 6;
 let eraserRadius = 35;
 let prevPoint = null;
 let currentMode = 'Standby';
 
-// Session Analytics Counters
 let sessionStrokes = 0;
 let sessionGestures = 0;
+let sessionOcrRuns = 0;
 let currentActiveCaption = '';
+let lastExtractedOcr = '';
 
 // Hand Skeleton Connections
 const HAND_CONNECTIONS = [
@@ -66,7 +82,6 @@ const HAND_CONNECTIONS = [
     [0, 17]                                // Palm
 ];
 
-// Top Virtual Buttons for Gesture Selection
 const virtualButtons = [
     { name: 'Red', color: '#ff3366', x1: 0.05, y1: 0.03, x2: 0.25, y2: 0.14 },
     { name: 'Green', color: '#00e676', x1: 0.28, y1: 0.03, x2: 0.48, y2: 0.14 },
@@ -74,7 +89,6 @@ const virtualButtons = [
     { name: 'Clear', color: '#f87171', x1: 0.74, y1: 0.03, x2: 0.95, y2: 0.14 }
 ];
 
-// Resize Canvases
 function resizeCanvases() {
     const width = 640;
     const height = 480;
@@ -89,7 +103,7 @@ function resizeCanvases() {
 resizeCanvases();
 
 // -------------------------------------------------------------
-// 1. Tab Navigation & Audio Chimes
+// 1. Tab Navigation & Notifications
 // -------------------------------------------------------------
 navTabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -164,12 +178,167 @@ function clearCanvas() {
 clearBtn.addEventListener('click', clearCanvas);
 
 // -------------------------------------------------------------
-// 3. Save Drawing to Dashboard & Backend API
+// 3. AI OCR Recognition (Tesseract.js)
+// -------------------------------------------------------------
+async function runOCR() {
+    try {
+        if (ocrStatusChip) {
+            ocrStatusChip.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing OCR...';
+            ocrStatusChip.style.color = '#eab308';
+        }
+        showToast('Running AI OCR on Canvas...');
+
+        // Convert drawing canvas to image
+        const imgData = drawingCanvas.toDataURL('image/png');
+
+        if (typeof Tesseract !== 'undefined') {
+            const worker = await Tesseract.createWorker('eng');
+            const ret = await worker.recognize(imgData);
+            const text = ret.data.text.trim();
+            await worker.terminate();
+
+            lastExtractedOcr = text || 'No clear text detected';
+            if (ocrExtractedText) ocrExtractedText.value = lastExtractedOcr;
+
+            if (ocrStatusChip) {
+                ocrStatusChip.innerHTML = '<i class="fa-solid fa-check"></i> OCR Success';
+                ocrStatusChip.style.color = '#34d399';
+            }
+
+            sessionOcrRuns++;
+            playChime(750);
+            showToast(`OCR Detected: "${lastExtractedOcr.slice(0, 25)}..."`);
+
+            // Auto-translate if text found
+            if (text) {
+                translateText(text);
+            }
+        } else {
+            showToast('OCR engine loading, please try again.');
+        }
+    } catch (err) {
+        console.error('OCR Error:', err);
+        if (ocrStatusChip) {
+            ocrStatusChip.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> OCR Error';
+            ocrStatusChip.style.color = '#f87171';
+        }
+        showToast('OCR failed to parse text');
+    }
+}
+
+if (ocrQuickBtn) ocrQuickBtn.addEventListener('click', runOCR);
+if (canvasOcrBtn) canvasOcrBtn.addEventListener('click', runOCR);
+if (runOcrMainBtn) runOcrMainBtn.addEventListener('click', runOCR);
+
+// -------------------------------------------------------------
+// 4. Text-to-Speech (TTS Voice Readout Engine)
+// -------------------------------------------------------------
+function speakText(text, lang = 'en-US') {
+    if (!text || !text.trim()) {
+        showToast('No text available to read aloud');
+        return;
+    }
+
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Stop ongoing speech
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.rate = 0.95;
+        utterance.pitch = 1.0;
+
+        // Pick matching natural voice if available
+        const voices = window.speechSynthesis.getVoices();
+        const matchedVoice = voices.find(v => v.lang.startsWith(lang.slice(0, 2)));
+        if (matchedVoice) utterance.voice = matchedVoice;
+
+        utterance.onstart = () => {
+            showToast(`🔊 Speaking: "${text.slice(0, 25)}..."`);
+        };
+
+        window.speechSynthesis.speak(utterance);
+    } else {
+        showToast('Speech Synthesis (TTS) not supported in this browser');
+    }
+}
+
+if (speakOcrBtn) {
+    speakOcrBtn.addEventListener('click', () => {
+        const text = ocrExtractedText ? ocrExtractedText.value : lastExtractedOcr;
+        speakText(text, 'en-US');
+    });
+}
+
+if (canvasSpeakBtn) {
+    canvasSpeakBtn.addEventListener('click', () => {
+        const text = lastExtractedOcr || currentActiveCaption || 'Air Drawing Canvas';
+        speakText(text, 'en-US');
+    });
+}
+
+if (copyOcrBtn) {
+    copyOcrBtn.addEventListener('click', () => {
+        const text = ocrExtractedText ? ocrExtractedText.value : '';
+        if (text) {
+            navigator.clipboard.writeText(text);
+            showToast('Text copied to clipboard!');
+        }
+    });
+}
+
+// -------------------------------------------------------------
+// 5. Multi-Language Translation Engine
+// -------------------------------------------------------------
+async function translateText(sourceText) {
+    const text = sourceText || (ocrExtractedText ? ocrExtractedText.value : '');
+    const targetLang = targetLangSelect ? targetLangSelect.value : 'te';
+
+    if (!text || !text.trim()) {
+        showToast('Please extract or enter text to translate');
+        return;
+    }
+
+    try {
+        if (translatedTextOutput) translatedTextOutput.value = 'Translating...';
+
+        const res = await fetch('/api/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text, source_lang: 'en', target_lang: targetLang })
+        });
+
+        const data = await res.json();
+        if (data.translated_text && translatedTextOutput) {
+            translatedTextOutput.value = data.translated_text;
+            showToast('Translation completed!');
+        }
+    } catch (err) {
+        console.error('Translation error:', err);
+        if (translatedTextOutput) translatedTextOutput.value = 'Translation service unavailable';
+    }
+}
+
+if (translateActionBtn) {
+    translateActionBtn.addEventListener('click', () => translateText());
+}
+
+if (speakTranslationBtn) {
+    speakTranslationBtn.addEventListener('click', () => {
+        const text = translatedTextOutput ? translatedTextOutput.value : '';
+        const targetLang = targetLangSelect ? targetLangSelect.value : 'te';
+        const langMap = { 'te': 'te-IN', 'hi': 'hi-IN', 'es': 'es-ES', 'fr': 'fr-FR', 'de': 'de-DE', 'ja': 'ja-JP', 'en': 'en-US' };
+        speakText(text, langMap[targetLang] || 'en-US');
+    });
+}
+
+// -------------------------------------------------------------
+// 6. Save Drawing & Gallery Dashboard
 // -------------------------------------------------------------
 async function saveDrawingToDashboard() {
     try {
         const imageB64 = drawingCanvas.toDataURL('image/png');
         const caption = currentActiveCaption || 'Multimodal Air Sketch';
+        const ocr = lastExtractedOcr || 'Not run';
 
         const response = await fetch('/api/save_drawing', {
             method: 'POST',
@@ -177,6 +346,7 @@ async function saveDrawingToDashboard() {
             body: JSON.stringify({
                 image: imageB64,
                 caption: caption,
+                ocr_text: ocr,
                 color: currentColor
             })
         });
@@ -199,11 +369,9 @@ saveBtn.addEventListener('click', saveDrawingToDashboard);
 window.addEventListener('keydown', (e) => {
     if (e.key === 's' || e.key === 'S') saveDrawingToDashboard();
     if (e.key === 'c' || e.key === 'C') clearCanvas();
+    if (e.key === 'o' || e.key === 'O') runOCR();
 });
 
-// -------------------------------------------------------------
-// 4. Gallery Loading & Deleting
-// -------------------------------------------------------------
 async function loadGallery() {
     try {
         const response = await fetch('/api/drawings');
@@ -226,8 +394,12 @@ async function loadGallery() {
                         <i class="fa-solid fa-clock"></i> ${item.created_at}
                     </div>
                     <div class="gallery-caption">
-                        <i class="fa-solid fa-quote-left"></i> ${item.caption}
+                        <i class="fa-solid fa-microphone"></i> <b>Speech:</b> "${item.caption}"
                     </div>
+                    ${item.ocr_text && item.ocr_text !== 'No OCR text extracted' ? `
+                    <div class="gallery-caption" style="border-left-color: #c084fc;">
+                        <i class="fa-solid fa-font"></i> <b>OCR:</b> "${item.ocr_text}"
+                    </div>` : ''}
                     <div class="gallery-actions">
                         <a href="${item.url}" download="${item.filename}" class="card-action-btn btn-download">
                             <i class="fa-solid fa-download"></i> Download
@@ -270,7 +442,7 @@ window.deleteDrawing = async function(id) {
 };
 
 // -------------------------------------------------------------
-// 5. Multimodal Analytics & Logs
+// 7. Analytics Sync
 // -------------------------------------------------------------
 async function loadAnalytics() {
     try {
@@ -280,7 +452,7 @@ async function loadAnalytics() {
         statStrokes.textContent = data.total_strokes || 0;
         statDrawings.textContent = data.total_drawings_saved || 0;
         statSpeechCount.textContent = data.total_speech_segments || 0;
-        statGestures.textContent = data.total_gestures_detected || 0;
+        statOcrRuns.textContent = (data.total_ocr_runs || 0) + (data.total_translations || 0);
 
         if (data.speech_transcripts && data.speech_transcripts.length > 0) {
             transcriptList.innerHTML = data.speech_transcripts.map(t => `
@@ -300,21 +472,21 @@ async function loadAnalytics() {
     }
 }
 
-// Periodically sync action stats to backend
 setInterval(() => {
-    if (sessionStrokes > 0 || sessionGestures > 0) {
+    if (sessionStrokes > 0 || sessionGestures > 0 || sessionOcrRuns > 0) {
         fetch('/api/update_stats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ strokes: sessionStrokes, gestures: sessionGestures })
+            body: JSON.stringify({ strokes: sessionStrokes, gestures: sessionGestures, ocr_runs: sessionOcrRuns })
         }).catch(() => {});
         sessionStrokes = 0;
         sessionGestures = 0;
+        sessionOcrRuns = 0;
     }
 }, 5000);
 
 // -------------------------------------------------------------
-// 6. Gesture Detection Helper
+// 8. Gesture Detection Helper
 // -------------------------------------------------------------
 function analyzeHand(landmarks) {
     const indexUp = landmarks[8].y < landmarks[6].y;
@@ -331,7 +503,7 @@ function analyzeHand(landmarks) {
 }
 
 // -------------------------------------------------------------
-// 7. MediaPipe Hands Setup
+// 9. MediaPipe Hands Setup
 // -------------------------------------------------------------
 const hands = new Hands({
     locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
@@ -459,9 +631,9 @@ function onResults(results) {
                 }
             }
         }
-        // Case 3: Only Index Finger Up -> Drawing
+        // Case 3: Only Index Finger Up -> Drawing / Writing
         else if (gesture.indexUp && !gesture.middleUp && !gesture.ringUp && !gesture.pinkyUp) {
-            currentMode = 'Drawing Mode';
+            currentMode = 'Drawing / Writing Mode';
             sessionStrokes++;
 
             camCtx.fillStyle = currentColor;
@@ -493,7 +665,7 @@ function onResults(results) {
 }
 
 // -------------------------------------------------------------
-// 8. Start Webcam Loop
+// 10. Start Webcam Loop
 // -------------------------------------------------------------
 const camera = new Camera(videoElement, {
     onFrame: async () => {
@@ -513,7 +685,7 @@ camera.start().then(() => {
 });
 
 // -------------------------------------------------------------
-// 9. Ultra-Fast Web Speech Recognition
+// 11. Ultra-Fast Web Speech Recognition
 // -------------------------------------------------------------
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -554,7 +726,6 @@ if (SpeechRecognition) {
                 lastFinalTranscript = (lastFinalTranscript + ' ' + trimmedFinal).slice(-150).trim();
                 currentActiveCaption = trimmedFinal;
 
-                // Log transcript to backend analytics
                 fetch('/api/log_speech', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -580,16 +751,12 @@ if (SpeechRecognition) {
             isRecognizing = false;
             setTimeout(() => {
                 if (!isRecognizing) {
-                    try {
-                        recognition.start();
-                    } catch (e) {}
+                    try { recognition.start(); } catch (e) {}
                 }
             }, 100);
         };
 
-        try {
-            recognition.start();
-        } catch (e) {}
+        try { recognition.start(); } catch (e) {}
     }
 
     initRecognition();
@@ -602,11 +769,11 @@ if (SpeechRecognition) {
         });
     }
 } else {
-    captionText.innerHTML = '<span class="caption-interim">Web Speech API not supported. Please use Google Chrome or Edge.</span>';
+    captionText.innerHTML = '<span class="caption-interim">Web Speech API not supported. Please use Chrome or Edge.</span>';
 }
 
 // -------------------------------------------------------------
-// 10. Accessibility Features Toggles
+// 12. Accessibility Features Toggles
 // -------------------------------------------------------------
 if (largeCaptionToggle) {
     largeCaptionToggle.addEventListener('change', (e) => {
